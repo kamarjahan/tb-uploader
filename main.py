@@ -3,9 +3,9 @@ import os
 from pyrogram import Client, filters
 
 # Your API credentials from my.telegram.org (for Pyrogram Client)
-api_id = "YOUR_API_ID"
-api_hash = "YOUR_API_HASH"
-bot_token = "YOUR_BOT_TOKEN"
+api_id = "17875613"
+api_hash = "6798f54a7f74e94f2ef0923fba8a8377"
+bot_token = "7290308705:AAFMacn2DefUe_2BgK2a_HP2z2CF1pdtY4g"
 
 # Create a new Pyrogram Client
 app = Client("terabox_bot", api_id=api_id, api_hash=api_hash, bot_token=bot_token)
