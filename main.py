@@ -1,13 +1,20 @@
-import re
-import requests
+
 import os
+import time
+import requests
 from pyrogram import Client, filters
-from bs4 import BeautifulSoup
+from selenium import webdriver
+from selenium.webdriver.chrome.service import Service
+from selenium.webdriver.common.by import By
+from selenium.webdriver.chrome.options import Options
 
 # Your API credentials from my.telegram.org (for Pyrogram Client)
 api_id = "17875613"
 api_hash = "6798f54a7f74e94f2ef0923fba8a8377"
 bot_token = "7290308705:AAFMacn2DefUe_2BgK2a_HP2z2CF1pdtY4g"
+
+# Path to your ChromeDriver executable
+CHROME_DRIVER_PATH = '/path/to/chromedriver'  # Update this path
 
 # Create a new Pyrogram Client
 app = Client("terabox_bot", api_id=api_id, api_hash=api_hash, bot_token=bot_token)
@@ -15,8 +22,51 @@ app = Client("terabox_bot", api_id=api_id, api_hash=api_hash, bot_token=bot_toke
 # Directory to save downloaded files temporarily
 DOWNLOAD_DIR = "./downloads/"
 
-# Regex pattern to match both TeraBox and TeraFileShare URLs
-VALID_URL_PATTERN = r'(https?://)?(www\.)?(terabox\.com|terafileshare\.com)/[^\s]+'
+# Function to initialize Selenium WebDriver
+def init_driver():
+    chrome_options = Options()
+    chrome_options.add_argument("--headless")  # Run in headless mode to avoid opening a browser window
+    chrome_options.add_argument("--no-sandbox")
+    chrome_options.add_argument("--disable-dev-shm-usage")
+    
+    # Initialize WebDriver
+    service = Service(CHROME_DRIVER_PATH)
+    driver = webdriver.Chrome(service=service, options=chrome_options)
+    return driver
+
+# Function to download video via TeraBox or TeraFileShare
+def download_video(url):
+    driver = init_driver()
+    
+    # Load the URL
+    driver.get(url)
+    time.sleep(5)  # Allow some time for the page to fully load
+    
+    # Extract the download link from the page (adjust selector as per the actual site structure)
+    try:
+        download_button = driver.find_element(By.CLASS_NAME, "download-button-class")  # Example selector; adjust as needed
+        download_url = download_button.get_attribute("href")  # Get the direct download link
+        
+        if download_url:
+            # Download the file using requests
+            video_response = requests.get(download_url, stream=True)
+
+            # Save the file locally
+            file_name = os.path.join(DOWNLOAD_DIR, "downloaded_video.mp4")  # Change extension based on file type
+            with open(file_name, "wb") as f:
+                for chunk in video_response.iter_content(chunk_size=1024):
+                    if chunk:
+                        f.write(chunk)
+
+            driver.quit()  # Close the browser
+            return file_name
+        else:
+            driver.quit()
+            raise Exception("Download link not found")
+
+    except Exception as e:
+        driver.quit()
+        raise e
 
 # Command to start the bot
 @app.on_message(filters.command("start"))
@@ -27,8 +77,9 @@ async def start(client, message):
 @app.on_message(filters.text)
 async def handle_link(client, message):
     url = message.text
-    # Use regex to validate the URL
-    if re.match(VALID_URL_PATTERN, url):
+
+    # Basic URL validation
+    if "terabox.com" in url or "terafileshare.com" in url:
         await message.reply("Attempting to download the video...")
 
         try:
@@ -44,36 +95,6 @@ async def handle_link(client, message):
             await message.reply(f"Failed to download the video. Error: {e}")
     else:
         await message.reply("Please send a valid TeraBox or TeraFileShare link.")
-
-# Function to extract download link and download the video
-def download_video(url):
-    # Send a GET request to the link
-    response = requests.get(url)
-    if response.status_code != 200:
-        raise Exception("Failed to load the page")
-
-    # Parse the HTML to find the actual download link (using BeautifulSoup)
-    soup = BeautifulSoup(response.content, "html.parser")
-    
-    # Find the download link in the page (example, adjust selector as necessary)
-    # Assuming <a> tag contains the final download link
-    download_link = soup.find("a", {"class": "download-button-class"})  # Example; adjust according to the site’s structure
-    if not download_link:
-        raise Exception("Download link not found")
-
-    download_url = download_link['href']  # Extract the href attribute
-
-    # Now download the video from the extracted link
-    video_response = requests.get(download_url, stream=True)
-
-    # Save the file locally
-    file_name = os.path.join(DOWNLOAD_DIR, "downloaded_video.mp4")  # Change extension based on file type
-    with open(file_name, "wb") as f:
-        for chunk in video_response.iter_content(chunk_size=1024):
-            if chunk:
-                f.write(chunk)
-
-    return file_name
 
 if __name__ == "__main__":
     if not os.path.exists(DOWNLOAD_DIR):
