@@ -1,2 +1,3 @@
 pyrogram==2.0.106  # Use your Pyrogram version
 requests
+bs4
