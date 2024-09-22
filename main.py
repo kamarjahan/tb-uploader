@@ -14,7 +14,7 @@ api_hash = "6798f54a7f74e94f2ef0923fba8a8377"
 bot_token = "7290308705:AAFMacn2DefUe_2BgK2a_HP2z2CF1pdtY4g"
 
 # Path to your ChromeDriver executable
-CHROME_DRIVER_PATH = '/path/to/chromedriver'  # Update this path
+CHROME_DRIVER_PATH = "/usr/local/bin/chromedriver"  # Update this path
 
 # Create a new Pyrogram Client
 app = Client("terabox_bot", api_id=api_id, api_hash=api_hash, bot_token=bot_token)
@@ -28,12 +28,11 @@ def init_driver():
     chrome_options.add_argument("--headless")  # Run in headless mode to avoid opening a browser window
     chrome_options.add_argument("--no-sandbox")
     chrome_options.add_argument("--disable-dev-shm-usage")
-    
-    # Initialize WebDriver
+
+    # Initialize WebDriver with the ChromeDriver path
     service = Service(CHROME_DRIVER_PATH)
     driver = webdriver.Chrome(service=service, options=chrome_options)
     return driver
-
 # Function to download video via TeraBox or TeraFileShare
 def download_video(url):
     driver = init_driver()
